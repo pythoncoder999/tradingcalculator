@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Trading Profit Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .profit-positive {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+        }
+        
+        .profit-negative {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+        
+        .form-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
+        }
+        
+        .transactions-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .transactions-table th,
+        .transactions-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .transactions-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .transactions-table tr:nth-child(even) {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .transactions-table tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .profit-cell {
+            font-weight: bold;
+        }
+        
+        .profit-positive-cell {
+            color: #27ae60;
+        }
+        
+        .profit-negative-cell {
+            color: #e74c3c;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .delete-btn:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .transactions-table {
+                font-size: 14px;
+            }
+            
+            .transactions-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Day Trading Profit Calculator</h1>
+            <p>Track your trading performance and generate detailed reports</p>
+        </div>
+        
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Transactions</h3>
+                <div class="value" id="totalTransactions">0</div>
+            </div>
+            <div class="card" id="totalProfitCard">
+                <h3>Total Profit/Loss</h3>
+                <div class="value" id="totalProfit">$0.00</div>
+            </div>
+            <div class="card">
+                <h3>Win Rate</h3>
+                <div class="value" id="winRate">0%</div>
+            </div>
+            <div class="card">
+                <h3>Average Trade</h3>
+                <div class="value" id="avgTrade">$0.00</div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2>📝 Add New Transaction</h2>
+            <form id="transactionForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="symbol">Symbol</label>
+                        <input type="text" id="symbol" placeholder="e.g., AAPL" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Type</label>
+                        <select id="type" required>
+                            <option value="BUY">Buy</option>
+                            <option value="SELL">Sell</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" min="1" step="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Price per Share</label>
+                        <input type="number" id="price" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fees">Fees</label>
+                        <input type="number" id="fees" min="0" step="0.01" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="datetime">Date & Time</label>
+                        <input type="datetime-local" id="datetime" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Transaction</button>
+            </form>
+        </div>
+        
+        <div class="transactions-section">
+            <div class="transactions-header">
+                <h2>📊 Transaction History</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="exportToPDF()">📄 Export to PDF</button>
+                    <button class="btn btn-danger" onclick="clearAllTransactions()">🗑️ Clear All</button>
+                </div>
+            </div>
+            
+            <div id="transactionsContainer">
+                <div class="empty-state">
+                    <h3>No transactions yet</h3>
+                    <p>Add your first transaction to get started!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+        let tradeGroups = {};
+        
+        function setCurrentDateTime() {
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            document.getElementById('datetime').value = localDateTime.toISOString().slice(0, 16);
+        }
+        
+        function addTransaction(symbol, type, quantity, price, fees, datetime) {
+            const transaction = {
+                id: Date.now() + Math.random(),
+                symbol: symbol.toUpperCase(),
+                type: type,
+                quantity: parseInt(quantity),
+                price: parseFloat(price),
+                fees: parseFloat(fees),
+                datetime: datetime,
+                total: (parseFloat(price) * parseInt(quantity)) + parseFloat(fees)
+            };
+            
+            transactions.push(transaction);
+            updateTradeGroups();
+            updateDisplay();
+            return transaction;
+        }
+        
+        function updateTradeGroups() {
+            tradeGroups = {};
+            
+            transactions.forEach(transaction => {
+                if (!tradeGroups[transaction.symbol]) {
+                    tradeGroups[transaction.symbol] = {
+                        symbol: transaction.symbol,
+                        totalShares: 0,
+                        totalCost: 0,
+                        avgPrice: 0,
+                        realizedProfit: 0,
+                        transactions: []
+                    };
+                }
+                
+                const group = tradeGroups[transaction.symbol];
+                group.transactions.push(transaction);
+                
+                if (transaction.type === 'BUY') {
+                    group.totalShares += transaction.quantity;
+                    group.totalCost += transaction.total;
+                } else if (transaction.type === 'SELL') {
+                    const sellValue = (transaction.price * transaction.quantity) - transaction.fees;
+                    const avgCost = group.totalCost / (group.totalShares || 1);
+                    const costBasis = avgCost * transaction.quantity;
+                    group.realizedProfit += sellValue - costBasis;
+                    group.totalShares -= transaction.quantity;
+                    
+                    if (group.totalShares > 0) {
+                        const remainingCost = (group.totalCost / (group.totalShares + transaction.quantity)) * group.totalShares;
+                        group.totalCost = remainingCost;
+                    } else {
+                        group.totalCost = 0;
+                    }
+                }
+                
+                group.avgPrice = group.totalShares > 0 ? group.totalCost / group.totalShares : 0;
+            });
+        }
+        
+        function calculateStats() {
+            const totalProfit = Object.values(tradeGroups).reduce((sum, group) => sum + group.realizedProfit, 0);
+            const completedTrades = Object.values(tradeGroups).filter(group => group.realizedProfit !== 0);
+            const winningTrades = completedTrades.filter(group => group.realizedProfit > 0);
+            const winRate = completedTrades.length > 0 ? (winningTrades.length / completedTrades.length) * 100 : 0;
+            const avgTrade = completedTrades.length > 0 ? totalProfit / completedTrades.length : 0;
+            
+            return {
+                totalTransactions: transactions.length,
+                totalProfit: totalProfit,
+                winRate: winRate,
+                avgTrade: avgTrade
+            };
+        }
+        
+        function updateDisplay() {
+            const stats = calculateStats();
+            
+            document.getElementById('totalTransactions').textContent = stats.totalTransactions;
+            document.getElementById('totalProfit').textContent = `$${stats.totalProfit.toFixed(2)}`;
+            document.getElementById('winRate').textContent = `${stats.winRate.toFixed(1)}%`;
+            document.getElementById('avgTrade').textContent = `$${stats.avgTrade.toFixed(2)}`;
+            
+            const profitCard = document.getElementById('totalProfitCard');
+            profitCard.className = 'card ' + (stats.totalProfit >= 0 ? 'profit-positive' : 'profit-negative');
+            
+            updateTransactionsTable();
+        }
+        
+        function updateTransactionsTable() {
+            const container = document.getElementById('transactionsContainer');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No transactions yet</h3>
+                        <p>Add your first transaction to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            
+            let tableHTML = `
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Fees</th>
+                            <th>Total</th>
+                            <th>P&L</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedTransactions.forEach(transaction => {
+                const group = tradeGroups[transaction.symbol];
+                const pnl = group ? group.realizedProfit : 0;
+                const formattedDate = new Date(transaction.datetime).toLocaleString();
+                
+                tableHTML += `
+                    <tr>
+                        <td>${formattedDate}</td>
+                        <td><strong>${transaction.symbol}</strong></td>
+                        <td><span style="color: ${transaction.type === 'BUY' ? '#27ae60' : '#e74c3c'}">${transaction.type}</span></td>
+                        <td>${transaction.quantity}</td>
+                        <td>$${transaction.price.toFixed(2)}</td>
+                        <td>$${transaction.fees.toFixed(2)}</td>
+                        <td>$${transaction.total.toFixed(2)}</td>
+                        <td class="profit-cell ${pnl >= 0 ? 'profit-positive-cell' : 'profit-negative-cell'}">
+                            $${pnl.toFixed(2)}
+                        </td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+        
+        function deleteTransaction(id) {
+            if (confirm('Are you sure you want to delete this transaction?')) {
+                transactions = transactions.filter(t => t.id != id);
+                updateTradeGroups();
+                updateDisplay();
+            }
+        }
+        
+        function clearAllTransactions() {
+            if (confirm('Are you sure you want to clear all transactions? This action cannot be undone.')) {
+                transactions = [];
+                tradeGroups = {};
+                updateDisplay();
+            }
+        }
+        
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Day Trading Profit Report', 20, 20);
+            
+            // Date generated
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 30);
+            
+            // Summary statistics
+            const stats = calculateStats();
+            doc.setFontSize(14);
+            doc.text('Summary Statistics', 20, 45);
+            doc.setFontSize(10);
+            doc.text(`Total Transactions: ${stats.totalTransactions}`, 20, 55);
+            doc.text(`Total Profit/Loss: $${stats.totalProfit.toFixed(2)}`, 20, 65);
+            doc.text(`Win Rate: ${stats.winRate.toFixed(1)}%`, 20, 75);
+            doc.text(`Average Trade: $${stats.avgTrade.toFixed(2)}`, 20, 85);
+            
+            // Transactions table
+            if (transactions.length > 0) {
+                doc.setFontSize(14);
+                doc.text('Transaction History', 20, 105);
+                
+                const tableData = transactions.map(t => [
+                    new Date(t.datetime).toLocaleDateString(),
+                    new Date(t.datetime).toLocaleTimeString(),
+                    t.symbol,
+                    t.type,
+                    t.quantity.toString(),
+                    `$${t.price.toFixed(2)}`,
+                    `$${t.fees.toFixed(2)}`,
+                    `$${t.total.toFixed(2)}`
+                ]);
+                
+                let yPosition = 115;
+                doc.setFontSize(8);
+                
+                // Table headers
+                const headers = ['Date', 'Time', 'Symbol', 'Type', 'Qty', 'Price', 'Fees', 'Total'];
+                let xPosition = 20;
+                headers.forEach((header, index) => {
+                    doc.text(header, xPosition, yPosition);
+                    xPosition += 22;
+                });
+                
+                yPosition += 10;
+                
+                // Table data
+                tableData.forEach(row => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    xPosition = 20;
+                    row.forEach((cell, index) => {
+                        doc.text(cell, xPosition, yPosition);
+                        xPosition += 22;
+                    });
+                    yPosition += 8;
+                });
+                
+                // Position summary
+                if (Object.keys(tradeGroups).length > 0) {
+                    yPosition += 10;
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.text('Position Summary', 20, yPosition);
+                    yPosition += 10;
+                    
+                    doc.setFontSize(8);
+                    Object.values(tradeGroups).forEach(group => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+                        
+                        doc.text(`${group.symbol}: ${group.totalShares} shares, Avg: $${group.avgPrice.toFixed(2)}, P&L: $${group.realizedProfit.toFixed(2)}`, 20, yPosition);
+                        yPosition += 6;
+                    });
+                }
+            }
+            
+            // Save the PDF
+            const filename = `trading_report_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+        }
+        
+        // Form submission
+        document.getElementById('transactionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const symbol = document.getElementById('symbol').value;
+            const type = document.getElementById('type').value;
+            const quantity = document.getElementById('quantity').value;
+            const price = document.getElementById('price').value;
+            const fees = document.getElementById('fees').value || 0;
+            const datetime = document.getElementById('datetime').value;
+            
+            addTransaction(symbol, type, quantity, price, fees, datetime);
+            
+            // Reset form
+            e.target.reset();
+            setCurrentDateTime();
+            
+            // Show success message
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Added!';
+            btn.style.background = 'linear-gradient(135deg, #56ab2f, #a8e6cf)';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            }, 2000);
+        });
+        
+        // Initialize
+        setCurrentDateTime();
+        updateDisplay();
+    </script>
+</body>
+</html>
