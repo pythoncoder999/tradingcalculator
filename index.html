@@ -367,15 +367,33 @@
         }
         
         function addTransaction(symbol, type, quantity, price, fees, datetime) {
+            const symbolUpper = symbol.toUpperCase();
+            const qty = parseInt(quantity);
+            
+            // Check if this is a sell order and validate position
+            if (type === 'SELL') {
+                const currentPosition = getCurrentPosition(symbolUpper);
+                
+                if (currentPosition === 0) {
+                    showError(`Cannot sell ${symbolUpper}: No position held in this stock`);
+                    return null;
+                }
+                
+                if (qty > currentPosition) {
+                    showError(`Cannot sell ${qty} shares of ${symbolUpper}: Only ${currentPosition} shares available`);
+                    return null;
+                }
+            }
+            
             const transaction = {
                 id: Date.now() + Math.random(),
-                symbol: symbol.toUpperCase(),
+                symbol: symbolUpper,
                 type: type,
-                quantity: parseInt(quantity),
+                quantity: qty,
                 price: parseFloat(price),
                 fees: parseFloat(fees),
                 datetime: datetime,
-                total: (parseFloat(price) * parseInt(quantity)) + parseFloat(fees)
+                total: (parseFloat(price) * qty) + parseFloat(fees)
             };
             
             transactions.push(transaction);
@@ -384,43 +402,135 @@
             return transaction;
         }
         
+        function getCurrentPosition(symbol) {
+            const symbolTransactions = transactions.filter(t => t.symbol === symbol);
+            let position = 0;
+            
+            symbolTransactions.forEach(transaction => {
+                if (transaction.type === 'BUY') {
+                    position += transaction.quantity;
+                } else if (transaction.type === 'SELL') {
+                    position -= transaction.quantity;
+                }
+            });
+            
+            return position;
+        }
+        
+        function showError(message) {
+            // Create error notification
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #ff416c, #ff4b2b);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 10px 25px rgba(255, 65, 108, 0.3);
+                z-index: 1000;
+                font-weight: 600;
+                max-width: 400px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            errorDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>⚠️</span>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentElement) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+        
         function updateTradeGroups() {
             tradeGroups = {};
             
+            // First pass: calculate current positions
             transactions.forEach(transaction => {
                 if (!tradeGroups[transaction.symbol]) {
                     tradeGroups[transaction.symbol] = {
                         symbol: transaction.symbol,
-                        totalShares: 0,
-                        totalCost: 0,
-                        avgPrice: 0,
+                        currentShares: 0,
+                        totalBought: 0,
+                        totalSold: 0,
+                        totalCostBasis: 0,
+                        avgBuyPrice: 0,
                         realizedProfit: 0,
                         transactions: []
                     };
                 }
                 
-                const group = tradeGroups[transaction.symbol];
-                group.transactions.push(transaction);
+                tradeGroups[transaction.symbol].transactions.push(transaction);
+            });
+            
+            // Second pass: calculate profits using FIFO method
+            Object.values(tradeGroups).forEach(group => {
+                let buyQueue = []; // FIFO queue for buy orders
+                let totalRealized = 0;
+                let currentPosition = 0;
+                let totalCostBasis = 0;
                 
-                if (transaction.type === 'BUY') {
-                    group.totalShares += transaction.quantity;
-                    group.totalCost += transaction.total;
-                } else if (transaction.type === 'SELL') {
-                    const sellValue = (transaction.price * transaction.quantity) - transaction.fees;
-                    const avgCost = group.totalCost / (group.totalShares || 1);
-                    const costBasis = avgCost * transaction.quantity;
-                    group.realizedProfit += sellValue - costBasis;
-                    group.totalShares -= transaction.quantity;
-                    
-                    if (group.totalShares > 0) {
-                        const remainingCost = (group.totalCost / (group.totalShares + transaction.quantity)) * group.totalShares;
-                        group.totalCost = remainingCost;
-                    } else {
-                        group.totalCost = 0;
+                // Sort transactions by datetime
+                const sortedTransactions = group.transactions.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+                
+                sortedTransactions.forEach(transaction => {
+                    if (transaction.type === 'BUY') {
+                        buyQueue.push({
+                            quantity: transaction.quantity,
+                            price: transaction.price,
+                            fees: transaction.fees,
+                            costPerShare: (transaction.price * transaction.quantity + transaction.fees) / transaction.quantity
+                        });
+                        currentPosition += transaction.quantity;
+                        totalCostBasis += (transaction.price * transaction.quantity + transaction.fees);
+                    } else if (transaction.type === 'SELL') {
+                        let remainingToSell = transaction.quantity;
+                        let sellProfit = 0;
+                        const sellPricePerShare = (transaction.price * transaction.quantity - transaction.fees) / transaction.quantity;
+                        
+                        while (remainingToSell > 0 && buyQueue.length > 0) {
+                            const buyOrder = buyQueue[0];
+                            const sharesToSell = Math.min(remainingToSell, buyOrder.quantity);
+                            
+                            sellProfit += sharesToSell * (sellPricePerShare - buyOrder.costPerShare);
+                            
+                            buyOrder.quantity -= sharesToSell;
+                            remainingToSell -= sharesToSell;
+                            currentPosition -= sharesToSell;
+                            totalCostBasis -= sharesToSell * buyOrder.costPerShare;
+                            
+                            if (buyOrder.quantity === 0) {
+                                buyQueue.shift();
+                            }
+                        }
+                        
+                        totalRealized += sellProfit;
                     }
-                }
+                });
                 
-                group.avgPrice = group.totalShares > 0 ? group.totalCost / group.totalShares : 0;
+                group.currentShares = currentPosition;
+                group.totalCostBasis = totalCostBasis;
+                group.avgBuyPrice = currentPosition > 0 ? totalCostBasis / currentPosition : 0;
+                group.realizedProfit = totalRealized;
+                
+                // Calculate totals for display
+                group.totalBought = group.transactions
+                    .filter(t => t.type === 'BUY')
+                    .reduce((sum, t) => sum + t.quantity, 0);
+                    
+                group.totalSold = group.transactions
+                    .filter(t => t.type === 'SELL')
+                    .reduce((sum, t) => sum + t.quantity, 0);
             });
         }
         
