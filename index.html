@@ -325,10 +325,7 @@
                         <label for="price">Price per Share</label>
                         <input type="number" id="price" min="0" step="0.01" required>
                     </div>
-                    <div class="form-group">
-                        <label for="fees">Fees</label>
-                        <input type="number" id="fees" min="0" step="0.01" value="0">
-                    </div>
+
                     <div class="form-group">
                         <label for="datetime">Date & Time</label>
                         <input type="datetime-local" id="datetime" required>
@@ -366,9 +363,10 @@
             document.getElementById('datetime').value = localDateTime.toISOString().slice(0, 16);
         }
         
-        function addTransaction(symbol, type, quantity, price, fees, datetime) {
+        function addTransaction(symbol, type, quantity, price, datetime) {
             const symbolUpper = symbol.toUpperCase();
             const qty = parseInt(quantity);
+            const fees = 0; // Remove fees from input
             
             // Check if this is a sell order and validate position
             if (type === 'SELL') {
@@ -391,9 +389,9 @@
                 type: type,
                 quantity: qty,
                 price: parseFloat(price),
-                fees: parseFloat(fees),
+                fees: fees,
                 datetime: datetime,
-                total: (parseFloat(price) * qty) + parseFloat(fees)
+                total: (parseFloat(price) * qty) + fees
             };
             
             transactions.push(transaction);
@@ -489,14 +487,14 @@
                             quantity: transaction.quantity,
                             price: transaction.price,
                             fees: transaction.fees,
-                            costPerShare: (transaction.price * transaction.quantity + transaction.fees) / transaction.quantity
+                            costPerShare: transaction.price
                         });
                         currentPosition += transaction.quantity;
-                        totalCostBasis += (transaction.price * transaction.quantity + transaction.fees);
+                        totalCostBasis += (transaction.price * transaction.quantity);
                     } else if (transaction.type === 'SELL') {
                         let remainingToSell = transaction.quantity;
                         let sellProfit = 0;
-                        const sellPricePerShare = (transaction.price * transaction.quantity - transaction.fees) / transaction.quantity;
+                        const sellPricePerShare = transaction.price;
                         
                         while (remainingToSell > 0 && buyQueue.length > 0) {
                             const buyOrder = buyQueue[0];
@@ -587,9 +585,8 @@
                             <th>Type</th>
                             <th>Quantity</th>
                             <th>Price</th>
-                            <th>Fees</th>
                             <th>Total</th>
-                            <th>P&L</th>
+                            <th>Position</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -597,8 +594,7 @@
             `;
             
             sortedTransactions.forEach(transaction => {
-                const group = tradeGroups[transaction.symbol];
-                const pnl = group ? group.realizedProfit : 0;
+                const currentPosition = getCurrentPosition(transaction.symbol);
                 const formattedDate = new Date(transaction.datetime).toLocaleString();
                 
                 tableHTML += `
@@ -607,12 +603,10 @@
                         <td><strong>${transaction.symbol}</strong></td>
                         <td><span style="color: ${transaction.type === 'BUY' ? '#27ae60' : '#e74c3c'}">${transaction.type}</span></td>
                         <td>${transaction.quantity}</td>
-                        <td>$${transaction.price.toFixed(2)}</td>
-                        <td>$${transaction.fees.toFixed(2)}</td>
-                        <td>$${transaction.total.toFixed(2)}</td>
-                        <td class="profit-cell ${pnl >= 0 ? 'profit-positive-cell' : 'profit-negative-cell'}">
-                            $${pnl.toFixed(2)}
-                        </td>
+                        <td>${transaction.price.toFixed(2)}</td>
+                        <td>${transaction.fees.toFixed(2)}</td>
+                        <td>${transaction.total.toFixed(2)}</td>
+                        <td><strong>${currentPosition}</strong></td>
                         <td>
                             <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">🗑️</button>
                         </td>
@@ -625,7 +619,56 @@
                 </table>
             `;
             
-            container.innerHTML = tableHTML;
+            // Add current positions summary
+            const positionsHTML = generatePositionsTable();
+            
+            container.innerHTML = tableHTML + positionsHTML;
+        }
+        
+        function generatePositionsTable() {
+            const currentPositions = Object.values(tradeGroups).filter(group => group.currentShares > 0);
+            
+            if (currentPositions.length === 0) {
+                return '';
+            }
+            
+            let positionsHTML = `
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #333; margin-bottom: 15px;">📊 Current Positions</h3>
+                    <table class="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Shares</th>
+                                <th>Avg Cost</th>
+                                <th>Total Cost</th>
+                                <th>Realized P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            currentPositions.forEach(group => {
+                positionsHTML += `
+                    <tr>
+                        <td><strong>${group.symbol}</strong></td>
+                        <td>${group.currentShares}</td>
+                        <td>${group.avgBuyPrice.toFixed(2)}</td>
+                        <td>${group.totalCostBasis.toFixed(2)}</td>
+                        <td class="profit-cell ${group.realizedProfit >= 0 ? 'profit-positive-cell' : 'profit-negative-cell'}">
+                            ${group.realizedProfit.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            positionsHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            return positionsHTML;
         }
         
         function deleteTransaction(id) {
@@ -679,16 +722,15 @@
                     t.symbol,
                     t.type,
                     t.quantity.toString(),
-                    `$${t.price.toFixed(2)}`,
-                    `$${t.fees.toFixed(2)}`,
-                    `$${t.total.toFixed(2)}`
+                    `${t.price.toFixed(2)}`,
+                    `${t.total.toFixed(2)}`
                 ]);
                 
                 let yPosition = 115;
                 doc.setFontSize(8);
                 
                 // Table headers
-                const headers = ['Date', 'Time', 'Symbol', 'Type', 'Qty', 'Price', 'Fees', 'Total'];
+                const headers = ['Date', 'Time', 'Symbol', 'Type', 'Qty', 'Price', 'Total'];
                 let xPosition = 20;
                 headers.forEach((header, index) => {
                     doc.text(header, xPosition, yPosition);
@@ -750,25 +792,27 @@
             const type = document.getElementById('type').value;
             const quantity = document.getElementById('quantity').value;
             const price = document.getElementById('price').value;
-            const fees = document.getElementById('fees').value || 0;
             const datetime = document.getElementById('datetime').value;
             
-            addTransaction(symbol, type, quantity, price, fees, datetime);
+            const transaction = addTransaction(symbol, type, quantity, price, datetime);
             
-            // Reset form
-            e.target.reset();
-            setCurrentDateTime();
-            
-            // Show success message
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
-            btn.textContent = '✅ Added!';
-            btn.style.background = 'linear-gradient(135deg, #56ab2f, #a8e6cf)';
-            
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-            }, 2000);
+            // Only reset form and show success if transaction was added successfully
+            if (transaction) {
+                // Reset form
+                e.target.reset();
+                setCurrentDateTime();
+                
+                // Show success message
+                const btn = e.target.querySelector('button[type="submit"]');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Added!';
+                btn.style.background = 'linear-gradient(135deg, #56ab2f, #a8e6cf)';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                }, 2000);
+            }
         });
         
         // Initialize
