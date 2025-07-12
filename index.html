@@ -214,18 +214,6 @@
             background: rgba(102, 126, 234, 0.1);
         }
         
-        .profit-cell {
-            font-weight: bold;
-        }
-        
-        .profit-positive-cell {
-            color: #27ae60;
-        }
-        
-        .profit-negative-cell {
-            color: #e74c3c;
-        }
-        
         .delete-btn {
             background: none;
             border: none;
@@ -252,153 +240,27 @@
             font-size: 1.2em;
         }
 
-        /* Profit Milestone Modal Styles */
-        .milestone-modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .milestone-modal-content {
-            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.5s ease-out;
-            position: relative;
-        }
-
-        .milestone-modal-content h2 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .milestone-modal-content p {
-            font-size: 1.2em;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-
-        .milestone-modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .milestone-modal-btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            min-width: 120px;
-        }
-
-        .milestone-modal-btn.acknowledge {
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-        }
-
-        .milestone-modal-btn.acknowledge:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .milestone-modal-btn.remind {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .milestone-modal-btn.remind:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .celebration-emoji {
-            font-size: 3em;
-            margin-bottom: 20px;
-            animation: bounce 1s ease-in-out infinite;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(-50px) scale(0.8);
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        .reminder-notification {
+        .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #f39c12, #e67e22);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-weight: 600;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
             color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(243, 156, 18, 0.4);
-            z-index: 9999;
-            max-width: 350px;
-            animation: slideInRight 0.5s ease-out;
         }
 
-        .reminder-notification h4 {
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
-
-        .reminder-notification p {
-            margin-bottom: 15px;
-            font-size: 0.9em;
-        }
-
-        .reminder-notification button {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
+        .notification.error {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
             color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-            transition: background-color 0.3s ease;
-        }
-
-        .reminder-notification button:hover {
-            background: rgba(255, 255, 255, 0.3);
         }
 
         @keyframes slideInRight {
@@ -432,21 +294,6 @@
             .transactions-header {
                 flex-direction: column;
                 gap: 15px;
-            }
-
-            .milestone-modal-content {
-                margin: 20% auto;
-                padding: 25px;
-                width: 95%;
-            }
-
-            .milestone-modal-content h2 {
-                font-size: 2em;
-            }
-
-            .milestone-modal-buttons {
-                flex-direction: column;
-                align-items: center;
             }
         }
     </style>
@@ -527,26 +374,9 @@
         </div>
     </div>
 
-    <!-- Profit Milestone Modal -->
-    <div id="milestoneModal" class="milestone-modal">
-        <div class="milestone-modal-content">
-            <div class="celebration-emoji">🎉</div>
-            <h2>Congratulations!</h2>
-            <p>You've reached <strong>$3,000</strong> in profits! 🚀</p>
-            <p>This is a significant milestone in your trading journey. Consider taking some profits or adjusting your strategy.</p>
-            <div class="milestone-modal-buttons">
-                <button class="milestone-modal-btn acknowledge" onclick="acknowledgeMilestone()">Got It! 👍</button>
-                <button class="milestone-modal-btn remind" onclick="remindMeLater()">Remind Me Later ⏰</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         let transactions = [];
         let tradeGroups = {};
-        let milestoneReached = false;
-        let reminderInterval = null;
-        let lastProfitCheck = 0;
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -620,7 +450,6 @@
             transactions.push(transaction);
             updateTradeGroups();
             updateDisplay();
-            checkProfitMilestone();
             return transaction;
         }
         
@@ -641,20 +470,7 @@
         
         function showError(message) {
             const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #ff416c, #ff4b2b);
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 10px 25px rgba(255, 65, 108, 0.3);
-                z-index: 1000;
-                font-weight: 600;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease-out;
-            `;
+            errorDiv.className = 'notification error';
             errorDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span>⚠️</span>
@@ -670,6 +486,26 @@
                     errorDiv.remove();
                 }
             }, 5000);
+        }
+        
+        function showSuccessNotification(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'notification success';
+            successDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>✅</span>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                if (successDiv.parentElement) {
+                    successDiv.remove();
+                }
+            }, 3000);
         }
         
         function updateTradeGroups() {
@@ -857,26 +693,65 @@
             if (confirm('Are you sure you want to clear all transactions? This action cannot be undone.')) {
                 transactions = [];
                 tradeGroups = {};
-                milestoneReached = false;
-                lastProfitCheck = 0;
-                if (reminderInterval) {
-                    clearInterval(reminderInterval);
-                    reminderInterval = null;
-                }
                 updateDisplay();
                 saveTransactions();
                 showSuccessNotification('All transactions cleared! 🧹');
             }
         }
         
+        function exportToPDF() {
+            if (transactions.length === 0) {
+                showError('No transactions to export!');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.text('Day Trading Report', 20, 20);
+            
+            // Summary
+            const stats = calculateStats();
+            doc.setFontSize(12);
+            doc.text(`Total Transactions: ${stats.totalTransactions}`, 20, 40);
+            doc.text(`Total Profit/Loss: $${stats.totalProfit.toFixed(2)}`, 20, 50);
+            doc.text(`Win Rate: ${stats.winRate.toFixed(1)}%`, 20, 60);
+            doc.text(`Average Trade: $${stats.avgTrade.toFixed(2)}`, 20, 70);
+            
+            // Transactions
+            doc.text('Transaction History:', 20, 90);
+            
+            let y = 100;
+            transactions.forEach((transaction, index) => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                const date = new Date(transaction.datetime);
+                const formattedDate = date.toLocaleDateString();
+                
+                doc.text(`${index + 1}. ${transaction.symbol} - ${transaction.type} ${transaction.quantity} @ $${transaction.price.toFixed(2)} (${formattedDate})`, 20, y);
+                y += 10;
+            });
+            
+            doc.save('trading-report.pdf');
+            showSuccessNotification('PDF exported successfully! 📄');
+        }
+        
         function saveTransactions() {
             // In a real application, this would save to a database
             // For now, we'll just store in memory
+            console.log('Transactions saved:', transactions);
         }
         
         function loadTransactions() {
             // In a real application, this would load from a database
             // For now, we'll start with empty transactions
+            console.log('Loading transactions...');
         }
-        
-        function checkProfitM
+    </script>
+</body>
+</html>
