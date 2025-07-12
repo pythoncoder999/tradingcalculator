@@ -251,6 +251,166 @@
             margin-bottom: 10px;
             font-size: 1.2em;
         }
+
+        /* Profit Milestone Modal Styles */
+        .milestone-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .milestone-modal-content {
+            background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.5s ease-out;
+            position: relative;
+        }
+
+        .milestone-modal-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .milestone-modal-content p {
+            font-size: 1.2em;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .milestone-modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .milestone-modal-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+
+        .milestone-modal-btn.acknowledge {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .milestone-modal-btn.acknowledge:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .milestone-modal-btn.remind {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .milestone-modal-btn.remind:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .celebration-emoji {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.8);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .reminder-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(243, 156, 18, 0.4);
+            z-index: 9999;
+            max-width: 350px;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        .reminder-notification h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .reminder-notification p {
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .reminder-notification button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .reminder-notification button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes slideInRight {
+            from { 
+                opacity: 0; 
+                transform: translateX(100px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0);
+            }
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -272,6 +432,21 @@
             .transactions-header {
                 flex-direction: column;
                 gap: 15px;
+            }
+
+            .milestone-modal-content {
+                margin: 20% auto;
+                padding: 25px;
+                width: 95%;
+            }
+
+            .milestone-modal-content h2 {
+                font-size: 2em;
+            }
+
+            .milestone-modal-buttons {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -353,9 +528,26 @@
         </div>
     </div>
 
+    <!-- Profit Milestone Modal -->
+    <div id="milestoneModal" class="milestone-modal">
+        <div class="milestone-modal-content">
+            <div class="celebration-emoji">🎉</div>
+            <h2>Congratulations!</h2>
+            <p>You've reached <strong>$3,000</strong> in profits! 🚀</p>
+            <p>This is a significant milestone in your trading journey. Consider taking some profits or adjusting your strategy.</p>
+            <div class="milestone-modal-buttons">
+                <button class="milestone-modal-btn acknowledge" onclick="acknowledgeMilestone()">Got It! 👍</button>
+                <button class="milestone-modal-btn remind" onclick="remindMeLater()">Remind Me Later ⏰</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let transactions = [];
         let tradeGroups = {};
+        let milestoneReached = false;
+        let reminderInterval = null;
+        let lastProfitCheck = 0;
         
         function setCurrentDateTime() {
             const now = new Date();
@@ -397,6 +589,7 @@
             transactions.push(transaction);
             updateTradeGroups();
             updateDisplay();
+            checkProfitMilestone();
             return transaction;
         }
         
@@ -547,277 +740,117 @@
             };
         }
         
+        function checkProfitMilestone() {
+            const stats = calculateStats();
+            const currentProfit = stats.totalProfit;
+            
+            // Check if we've reached $3000 and haven't shown the milestone yet
+            if (currentProfit >= 3000 && !milestoneReached && lastProfitCheck < 3000) {
+                milestoneReached = true;
+                showMilestoneModal();
+            }
+            
+            lastProfitCheck = currentProfit;
+        }
+        
+        function showMilestoneModal() {
+            const modal = document.getElementById('milestoneModal');
+            modal.style.display = 'block';
+            
+            // Add sound effect if available
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWU2uLFdiMFl');
+                audio.play();
+            } catch (e) {
+                // Ignore if audio fails
+            }
+        }
+        
+        function acknowledgeMilestone() {
+            const modal = document.getElementById('milestoneModal');
+            modal.style.display = 'none';
+            
+            showSuccessNotification('Milestone acknowledged! Keep up the great work! 🎯');
+        }
+        
+        function remindMeLater() {
+            const modal = document.getElementById('milestoneModal');
+            modal.style.display = 'none';
+            
+            showSuccessNotification('We\'ll remind you again in 5 minutes! ⏰');
+            
+            // Set reminder for 5 minutes (300000 ms)
+            reminderInterval = setInterval(() => {
+                showReminderNotification();
+            }, 300000); // 5 minutes
+        }
+        
+        function showReminderNotification() {
+            const stats = calculateStats();
+            
+            // Only show reminder if still above $3000
+            if (stats.totalProfit >= 3000) {
+                const reminderDiv = document.createElement('div');
+                reminderDiv.className = 'reminder-notification';
+                reminderDiv.innerHTML = `
+                    <h4>💰 Profit Reminder</h4>
+                    <p>You still have <strong>$${stats.totalProfit.toFixed(2)}</strong> in profits! Consider your next move.</p>
+                    <button onclick="this.parentElement.remove()">Dismiss</button>
+                    <button onclick="acknowledgeMilestone(); this.parentElement.remove();">Stop Reminders</button>
+                `;
+                
+                document.body.appendChild(reminderDiv);
+                
+                // Auto remove after 10 seconds
+                setTimeout(() => {
+                    if (reminderDiv.parentElement) {
+                        reminderDiv.remove();
+                    }
+                }, 10000);
+            } else {
+                // Stop reminders if profit dropped below $3000
+                clearInterval(reminderInterval);
+                reminderInterval = null;
+                milestoneReached = false;
+            }
+        }
+        
+        function showSuccessNotification(message) {
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 10px 25px rgba(86, 171, 47, 0.3);
+                z-index: 1000;
+                font-weight: 600;
+                max-width: 400px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            successDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(successDiv);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (successDiv.parentElement) {
+                    successDiv.remove();
+                }
+            }, 5000);
+        }
+        
         function updateDisplay() {
             const stats = calculateStats();
             
             document.getElementById('totalTransactions').textContent = stats.totalTransactions;
             document.getElementById('totalProfit').textContent = `$${stats.totalProfit.toFixed(2)}`;
             document.getElementById('winRate').textContent = `${stats.winRate.toFixed(1)}%`;
-            document.getElementById('avgTrade').textContent = `$${stats.avgTrade.toFixed(2)}`;
-            
-            const profitCard = document.getElementById('totalProfitCard');
-            profitCard.className = 'card ' + (stats.totalProfit >= 0 ? 'profit-positive' : 'profit-negative');
-            
-            updateTransactionsTable();
-        }
-        
-        function updateTransactionsTable() {
-            const container = document.getElementById('transactionsContainer');
-            
-            if (transactions.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No transactions yet</h3>
-                        <p>Add your first transaction to get started!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-            
-            let tableHTML = `
-                <table class="transactions-table">
-                    <thead>
-                        <tr>
-                            <th>Date & Time</th>
-                            <th>Symbol</th>
-                            <th>Type</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                            <th>Position</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            sortedTransactions.forEach(transaction => {
-                const currentPosition = getCurrentPosition(transaction.symbol);
-                const formattedDate = new Date(transaction.datetime).toLocaleString();
-                
-                tableHTML += `
-                    <tr>
-                        <td>${formattedDate}</td>
-                        <td><strong>${transaction.symbol}</strong></td>
-                        <td><span style="color: ${transaction.type === 'BUY' ? '#27ae60' : '#e74c3c'}">${transaction.type}</span></td>
-                        <td>${transaction.quantity}</td>
-                        <td>${transaction.price.toFixed(2)}</td>
-                        <td>${transaction.fees.toFixed(2)}</td>
-                        <td>${transaction.total.toFixed(2)}</td>
-                        <td><strong>${currentPosition}</strong></td>
-                        <td>
-                            <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                    </tbody>
-                </table>
-            `;
-            
-            // Add current positions summary
-            const positionsHTML = generatePositionsTable();
-            
-            container.innerHTML = tableHTML + positionsHTML;
-        }
-        
-        function generatePositionsTable() {
-            const currentPositions = Object.values(tradeGroups).filter(group => group.currentShares > 0);
-            
-            if (currentPositions.length === 0) {
-                return '';
-            }
-            
-            let positionsHTML = `
-                <div style="margin-top: 30px;">
-                    <h3 style="color: #333; margin-bottom: 15px;">📊 Current Positions</h3>
-                    <table class="transactions-table">
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>Shares</th>
-                                <th>Avg Cost</th>
-                                <th>Total Cost</th>
-                                <th>Realized P&L</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            currentPositions.forEach(group => {
-                positionsHTML += `
-                    <tr>
-                        <td><strong>${group.symbol}</strong></td>
-                        <td>${group.currentShares}</td>
-                        <td>${group.avgBuyPrice.toFixed(2)}</td>
-                        <td>${group.totalCostBasis.toFixed(2)}</td>
-                        <td class="profit-cell ${group.realizedProfit >= 0 ? 'profit-positive-cell' : 'profit-negative-cell'}">
-                            ${group.realizedProfit.toFixed(2)}
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            positionsHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            return positionsHTML;
-        }
-        
-        function deleteTransaction(id) {
-            if (confirm('Are you sure you want to delete this transaction?')) {
-                transactions = transactions.filter(t => t.id != id);
-                updateTradeGroups();
-                updateDisplay();
-            }
-        }
-        
-        function clearAllTransactions() {
-            if (confirm('Are you sure you want to clear all transactions? This action cannot be undone.')) {
-                transactions = [];
-                tradeGroups = {};
-                updateDisplay();
-            }
-        }
-        
-        function exportToPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Header
-            doc.setFontSize(20);
-            doc.setTextColor(102, 126, 234);
-            doc.text('Day Trading Profit Report', 20, 20);
-            
-            // Date generated
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 30);
-            
-            // Summary statistics
-            const stats = calculateStats();
-            doc.setFontSize(14);
-            doc.text('Summary Statistics', 20, 45);
-            doc.setFontSize(10);
-            doc.text(`Total Transactions: ${stats.totalTransactions}`, 20, 55);
-            doc.text(`Total Profit/Loss: $${stats.totalProfit.toFixed(2)}`, 20, 65);
-            doc.text(`Win Rate: ${stats.winRate.toFixed(1)}%`, 20, 75);
-            doc.text(`Average Trade: $${stats.avgTrade.toFixed(2)}`, 20, 85);
-            
-            // Transactions table
-            if (transactions.length > 0) {
-                doc.setFontSize(14);
-                doc.text('Transaction History', 20, 105);
-                
-                const tableData = transactions.map(t => [
-                    new Date(t.datetime).toLocaleDateString(),
-                    new Date(t.datetime).toLocaleTimeString(),
-                    t.symbol,
-                    t.type,
-                    t.quantity.toString(),
-                    `${t.price.toFixed(2)}`,
-                    `${t.total.toFixed(2)}`
-                ]);
-                
-                let yPosition = 115;
-                doc.setFontSize(8);
-                
-                // Table headers
-                const headers = ['Date', 'Time', 'Symbol', 'Type', 'Qty', 'Price', 'Total'];
-                let xPosition = 20;
-                headers.forEach((header, index) => {
-                    doc.text(header, xPosition, yPosition);
-                    xPosition += 22;
-                });
-                
-                yPosition += 10;
-                
-                // Table data
-                tableData.forEach(row => {
-                    if (yPosition > 270) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    
-                    xPosition = 20;
-                    row.forEach((cell, index) => {
-                        doc.text(cell, xPosition, yPosition);
-                        xPosition += 22;
-                    });
-                    yPosition += 8;
-                });
-                
-                // Position summary
-                if (Object.keys(tradeGroups).length > 0) {
-                    yPosition += 10;
-                    if (yPosition > 250) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    
-                    doc.setFontSize(12);
-                    doc.text('Position Summary', 20, yPosition);
-                    yPosition += 10;
-                    
-                    doc.setFontSize(8);
-                    Object.values(tradeGroups).forEach(group => {
-                        if (yPosition > 270) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-                        
-                        doc.text(`${group.symbol}: ${group.totalShares} shares, Avg: $${group.avgPrice.toFixed(2)}, P&L: $${group.realizedProfit.toFixed(2)}`, 20, yPosition);
-                        yPosition += 6;
-                    });
-                }
-            }
-            
-            // Save the PDF
-            const filename = `trading_report_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(filename);
-        }
-        
-        // Form submission
-        document.getElementById('transactionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const symbol = document.getElementById('symbol').value;
-            const type = document.getElementById('type').value;
-            const quantity = document.getElementById('quantity').value;
-            const price = document.getElementById('price').value;
-            const datetime = document.getElementById('datetime').value;
-            
-            const transaction = addTransaction(symbol, type, quantity, price, datetime);
-            
-            // Only reset form and show success if transaction was added successfully
-            if (transaction) {
-                // Reset form
-                e.target.reset();
-                setCurrentDateTime();
-                
-                // Show success message
-                const btn = e.target.querySelector('button[type="submit"]');
-                const originalText = btn.textContent;
-                btn.textContent = '✅ Added!';
-                btn.style.background = 'linear-gradient(135deg, #56ab2f, #a8e6cf)';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-                }, 2000);
-            }
-        });
-        
-        // Initialize
-        setCurrentDateTime();
-        updateDisplay();
-    </script>
-</body>
-</html>
