@@ -500,7 +500,6 @@
                         <label for="price">Price per Share</label>
                         <input type="number" id="price" min="0" step="0.01" required>
                     </div>
-
                     <div class="form-group">
                         <label for="datetime">Date & Time</label>
                         <input type="datetime-local" id="datetime" required>
@@ -549,6 +548,38 @@
         let reminderInterval = null;
         let lastProfitCheck = 0;
         
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            setCurrentDateTime();
+            loadTransactions();
+            setupEventListeners();
+            updateDisplay();
+        });
+        
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('transactionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const symbol = document.getElementById('symbol').value.trim();
+                const type = document.getElementById('type').value;
+                const quantity = document.getElementById('quantity').value;
+                const price = document.getElementById('price').value;
+                const datetime = document.getElementById('datetime').value;
+                
+                if (symbol && type && quantity && price && datetime) {
+                    const transaction = addTransaction(symbol, type, quantity, price, datetime);
+                    if (transaction) {
+                        // Clear form
+                        document.getElementById('transactionForm').reset();
+                        setCurrentDateTime();
+                        showSuccessNotification('Transaction added successfully! 🎉');
+                        saveTransactions();
+                    }
+                }
+            });
+        }
+        
         function setCurrentDateTime() {
             const now = new Date();
             const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -558,7 +589,7 @@
         function addTransaction(symbol, type, quantity, price, datetime) {
             const symbolUpper = symbol.toUpperCase();
             const qty = parseInt(quantity);
-            const fees = 0; // Remove fees from input
+            const fees = 0;
             
             // Check if this is a sell order and validate position
             if (type === 'SELL') {
@@ -609,7 +640,6 @@
         }
         
         function showError(message) {
-            // Create error notification
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `
                 position: fixed;
@@ -623,7 +653,7 @@
                 z-index: 1000;
                 font-weight: 600;
                 max-width: 400px;
-                animation: slideIn 0.3s ease-out;
+                animation: slideInRight 0.3s ease-out;
             `;
             errorDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -635,7 +665,6 @@
             
             document.body.appendChild(errorDiv);
             
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 if (errorDiv.parentElement) {
                     errorDiv.remove();
@@ -646,7 +675,6 @@
         function updateTradeGroups() {
             tradeGroups = {};
             
-            // First pass: calculate current positions
             transactions.forEach(transaction => {
                 if (!tradeGroups[transaction.symbol]) {
                     tradeGroups[transaction.symbol] = {
@@ -664,14 +692,12 @@
                 tradeGroups[transaction.symbol].transactions.push(transaction);
             });
             
-            // Second pass: calculate profits using FIFO method
             Object.values(tradeGroups).forEach(group => {
-                let buyQueue = []; // FIFO queue for buy orders
+                let buyQueue = [];
                 let totalRealized = 0;
                 let currentPosition = 0;
                 let totalCostBasis = 0;
                 
-                // Sort transactions by datetime
                 const sortedTransactions = group.transactions.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
                 
                 sortedTransactions.forEach(transaction => {
@@ -714,7 +740,6 @@
                 group.avgBuyPrice = currentPosition > 0 ? totalCostBasis / currentPosition : 0;
                 group.realizedProfit = totalRealized;
                 
-                // Calculate totals for display
                 group.totalBought = group.transactions
                     .filter(t => t.type === 'BUY')
                     .reduce((sum, t) => sum + t.quantity, 0);
@@ -740,117 +765,118 @@
             };
         }
         
-        function checkProfitMilestone() {
-            const stats = calculateStats();
-            const currentProfit = stats.totalProfit;
-            
-            // Check if we've reached $3000 and haven't shown the milestone yet
-            if (currentProfit >= 3000 && !milestoneReached && lastProfitCheck < 3000) {
-                milestoneReached = true;
-                showMilestoneModal();
-            }
-            
-            lastProfitCheck = currentProfit;
-        }
-        
-        function showMilestoneModal() {
-            const modal = document.getElementById('milestoneModal');
-            modal.style.display = 'block';
-            
-            // Add sound effect if available
-            try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWU2uLFdiMFl');
-                audio.play();
-            } catch (e) {
-                // Ignore if audio fails
-            }
-        }
-        
-        function acknowledgeMilestone() {
-            const modal = document.getElementById('milestoneModal');
-            modal.style.display = 'none';
-            
-            showSuccessNotification('Milestone acknowledged! Keep up the great work! 🎯');
-        }
-        
-        function remindMeLater() {
-            const modal = document.getElementById('milestoneModal');
-            modal.style.display = 'none';
-            
-            showSuccessNotification('We\'ll remind you again in 5 minutes! ⏰');
-            
-            // Set reminder for 5 minutes (300000 ms)
-            reminderInterval = setInterval(() => {
-                showReminderNotification();
-            }, 300000); // 5 minutes
-        }
-        
-        function showReminderNotification() {
-            const stats = calculateStats();
-            
-            // Only show reminder if still above $3000
-            if (stats.totalProfit >= 3000) {
-                const reminderDiv = document.createElement('div');
-                reminderDiv.className = 'reminder-notification';
-                reminderDiv.innerHTML = `
-                    <h4>💰 Profit Reminder</h4>
-                    <p>You still have <strong>$${stats.totalProfit.toFixed(2)}</strong> in profits! Consider your next move.</p>
-                    <button onclick="this.parentElement.remove()">Dismiss</button>
-                    <button onclick="acknowledgeMilestone(); this.parentElement.remove();">Stop Reminders</button>
-                `;
-                
-                document.body.appendChild(reminderDiv);
-                
-                // Auto remove after 10 seconds
-                setTimeout(() => {
-                    if (reminderDiv.parentElement) {
-                        reminderDiv.remove();
-                    }
-                }, 10000);
-            } else {
-                // Stop reminders if profit dropped below $3000
-                clearInterval(reminderInterval);
-                reminderInterval = null;
-                milestoneReached = false;
-            }
-        }
-        
-        function showSuccessNotification(message) {
-            const successDiv = document.createElement('div');
-            successDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #56ab2f, #a8e6cf);
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 10px 25px rgba(86, 171, 47, 0.3);
-                z-index: 1000;
-                font-weight: 600;
-                max-width: 400px;
-                animation: slideIn 0.3s ease-out;
-            `;
-            successDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">×</button>
-                </div>
-            `;
-            
-            document.body.appendChild(successDiv);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (successDiv.parentElement) {
-                    successDiv.remove();
-                }
-            }, 5000);
-        }
-        
         function updateDisplay() {
             const stats = calculateStats();
             
             document.getElementById('totalTransactions').textContent = stats.totalTransactions;
             document.getElementById('totalProfit').textContent = `$${stats.totalProfit.toFixed(2)}`;
             document.getElementById('winRate').textContent = `${stats.winRate.toFixed(1)}%`;
+            document.getElementById('avgTrade').textContent = `$${stats.avgTrade.toFixed(2)}`;
+            
+            // Update profit card color
+            const profitCard = document.getElementById('totalProfitCard');
+            profitCard.className = 'card';
+            if (stats.totalProfit > 0) {
+                profitCard.classList.add('profit-positive');
+            } else if (stats.totalProfit < 0) {
+                profitCard.classList.add('profit-negative');
+            }
+            
+            displayTransactions();
+        }
+        
+        function displayTransactions() {
+            const container = document.getElementById('transactionsContainer');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No transactions yet</h3>
+                        <p>Add your first transaction to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            
+            let tableHTML = `
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedTransactions.forEach(transaction => {
+                const date = new Date(transaction.datetime);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                
+                tableHTML += `
+                    <tr>
+                        <td>${formattedDate}</td>
+                        <td><strong>${transaction.symbol}</strong></td>
+                        <td><span style="color: ${transaction.type === 'BUY' ? '#27ae60' : '#e74c3c'}">${transaction.type}</span></td>
+                        <td>${transaction.quantity}</td>
+                        <td>$${transaction.price.toFixed(2)}</td>
+                        <td>$${transaction.total.toFixed(2)}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+        
+        function deleteTransaction(id) {
+            if (confirm('Are you sure you want to delete this transaction?')) {
+                transactions = transactions.filter(t => t.id != id);
+                updateTradeGroups();
+                updateDisplay();
+                saveTransactions();
+                showSuccessNotification('Transaction deleted successfully! 🗑️');
+            }
+        }
+        
+        function clearAllTransactions() {
+            if (confirm('Are you sure you want to clear all transactions? This action cannot be undone.')) {
+                transactions = [];
+                tradeGroups = {};
+                milestoneReached = false;
+                lastProfitCheck = 0;
+                if (reminderInterval) {
+                    clearInterval(reminderInterval);
+                    reminderInterval = null;
+                }
+                updateDisplay();
+                saveTransactions();
+                showSuccessNotification('All transactions cleared! 🧹');
+            }
+        }
+        
+        function saveTransactions() {
+            // In a real application, this would save to a database
+            // For now, we'll just store in memory
+        }
+        
+        function loadTransactions() {
+            // In a real application, this would load from a database
+            // For now, we'll start with empty transactions
+        }
+        
+        function checkProfitM
